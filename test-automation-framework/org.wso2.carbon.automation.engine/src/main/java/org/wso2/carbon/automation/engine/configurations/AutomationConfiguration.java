@@ -21,13 +21,19 @@ public class AutomationConfiguration {
             configurationReader.readAutomationConfigurations();
             configurationDocument = configurationReader.getConfigurationXmlDocument();
         } catch (Exception e) {
-            log.error(e);
+            log.error("Error While reading configurations ",  e);
+            throw new IllegalArgumentException("Error While reading configurations" ,
+                                               e);
         }
     }
 
     public static Document getConfigurationDocument() {
         return configurationDocument;
     }
+
+	public static void setConfigurationDocument(Document configurationDocument) {
+		AutomationConfiguration.configurationDocument = configurationDocument;
+	}
 
     public static String getConfigurationValue(String expression) throws XPathExpressionException {
         Document xmlDocument = AutomationConfiguration.getConfigurationDocument();

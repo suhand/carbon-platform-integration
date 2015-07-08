@@ -17,10 +17,13 @@
 */
 package org.wso2.carbon.automation.test.utils.http.client;
 
+import org.wso2.carbon.automation.engine.exceptions.AutomationFrameworkException;
+
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.ProtocolException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -41,7 +44,6 @@ public class HttpRequestUtil {
      */
     public static HttpResponse sendGetRequest(String endpoint,
                                               String requestParameters) throws IOException {
-        if (endpoint.startsWith("http://")) {
             String urlStr = endpoint;
             if (requestParameters != null && requestParameters.length() > 0) {
                 urlStr += "?" + requestParameters;
@@ -56,7 +58,7 @@ public class HttpRequestUtil {
             StringBuilder sb = new StringBuilder();
             BufferedReader rd = null;
             try {
-                rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), Charset.defaultCharset()));
                 String line;
                 while ((line = rd.readLine()) != null) {
                     sb.append(line);
@@ -68,8 +70,6 @@ public class HttpRequestUtil {
                 }
             }
             return new HttpResponse(sb.toString(), conn.getResponseCode());
-        }
-        return null;
     }
 
     /**
@@ -81,16 +81,17 @@ public class HttpRequestUtil {
      * @param data     Data to be sent
      * @param endpoint The endpoint to which the data has to be POSTed
      * @param output   Output
-     * @throws Exception If an error occurs while POSTing
+     * @throws AutomationFrameworkException If an error occurs while POSTing
      */
-    public static void sendPostRequest(Reader data, URL endpoint, Writer output) throws Exception {
+    public static void sendPostRequest(Reader data, URL endpoint, Writer output) throws AutomationFrameworkException {
         HttpURLConnection urlConnection = null;
         try {
             urlConnection = (HttpURLConnection) endpoint.openConnection();
             try {
                 urlConnection.setRequestMethod("POST");
             } catch (ProtocolException e) {
-                throw new Exception("Shouldn't happen: HttpURLConnection doesn't support POST??", e);
+                throw new AutomationFrameworkException("Shouldn't happen: HttpURLConnection doesn't " +
+                                                       "support POST?? " + e.getMessage(), e);
             }
             urlConnection.setDoOutput(true);
             urlConnection.setDoInput(true);
@@ -103,7 +104,7 @@ public class HttpRequestUtil {
                 pipe(data, writer);
                 writer.close();
             } catch (IOException e) {
-                throw new Exception("IOException while posting data", e);
+                throw new AutomationFrameworkException("IOException while posting data " + e.getMessage(), e);
             } finally {
                 if (out != null) {
                     out.close();
@@ -111,18 +112,19 @@ public class HttpRequestUtil {
             }
             InputStream in = urlConnection.getInputStream();
             try {
-                Reader reader = new InputStreamReader(in);
+                Reader reader = new InputStreamReader(in, "UTF-8");
                 pipe(reader, output);
                 reader.close();
             } catch (IOException e) {
-                throw new Exception("IOException while reading response", e);
+                throw new AutomationFrameworkException("IOException while reading response " + e.getMessage(), e);
             } finally {
                 if (in != null) {
                     in.close();
                 }
             }
         } catch (IOException e) {
-            throw new Exception("Connection error (is server running at " + endpoint + " ?): " + e);
+            throw new AutomationFrameworkException("Connection error (is server running at "
+                                                   + endpoint + " ?): " + e.getMessage(), e);
         } finally {
             if (urlConnection != null) {
                 urlConnection.disconnect();
@@ -130,14 +132,15 @@ public class HttpRequestUtil {
         }
     }
 
-    public static HttpResponse doPost(URL endpoint, String body) throws Exception {
+    public static HttpResponse doPost(URL endpoint, String body) throws AutomationFrameworkException {
         HttpURLConnection urlConnection = null;
         try {
             urlConnection = (HttpURLConnection) endpoint.openConnection();
             try {
                 urlConnection.setRequestMethod("POST");
             } catch (ProtocolException e) {
-                throw new Exception("Shouldn't happen: HttpURLConnection doesn't support POST??", e);
+                throw new AutomationFrameworkException("Shouldn't happen: HttpURLConnection doesn't support POST?? "
+                                                       + e.getMessage(), e);
             }
             urlConnection.setDoOutput(true);
             urlConnection.setDoInput(true);
@@ -150,7 +153,7 @@ public class HttpRequestUtil {
                 writer.write(body);
                 writer.close();
             } catch (IOException e) {
-                throw new Exception("IOException while posting data", e);
+                throw new AutomationFrameworkException("IOException while posting data " + e.getMessage(), e);
             } finally {
                 if (out != null) {
                     out.close();
@@ -160,7 +163,7 @@ public class HttpRequestUtil {
             StringBuilder sb = new StringBuilder();
             BufferedReader rd = null;
             try {
-                rd = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+                rd = new BufferedReader(new InputStreamReader(urlConnection.getInputStream(), Charset.defaultCharset()));
                 String line;
                 while ((line = rd.readLine()) != null) {
                     sb.append(line);
@@ -181,7 +184,8 @@ public class HttpRequestUtil {
             }
             return new HttpResponse(sb.toString(), urlConnection.getResponseCode(), headers);
         } catch (IOException e) {
-            throw new Exception("Connection error (is server running at " + endpoint + " ?): " + e);
+            throw new AutomationFrameworkException("Connection error (is server running at "
+                                                   + endpoint + " ?): " + e.getMessage(), e);
         } finally {
             if (urlConnection != null) {
                 urlConnection.disconnect();
@@ -190,36 +194,33 @@ public class HttpRequestUtil {
     }
 
     public static HttpResponse doPost(URL endpoint, String postBody, Map<String, String> headers)
-            throws Exception {
+            throws AutomationFrameworkException {
         HttpURLConnection urlConnection = null;
         try {
             urlConnection = (HttpURLConnection) endpoint.openConnection();
             try {
                 urlConnection.setRequestMethod("POST");
             } catch (ProtocolException e) {
-                throw new Exception("Shouldn't happen: HttpURLConnection doesn't support POST??", e);
+                throw new AutomationFrameworkException("Shouldn't happen: HttpURLConnection doesn't" +
+                                                       " support POST?? " + e.getMessage(), e);
             }
             urlConnection.setDoOutput(true);
             urlConnection.setDoInput(true);
             urlConnection.setUseCaches(false);
             urlConnection.setAllowUserInteraction(false);
             //setting headers
-            if (headers != null && headers.size() > 0) {
-                Iterator<String> itr = headers.keySet().iterator();
-                while (itr.hasNext()) {
-                    String key = itr.next();
-                    if (key != null) {
-                        urlConnection.setRequestProperty(key, headers.get(key));
-                    }
-                }
+
+            for (Map.Entry<String, String> e : headers.entrySet()) {
+                urlConnection.setRequestProperty(e.getKey(), e.getValue());
             }
+
             OutputStream out = urlConnection.getOutputStream();
             try {
                 Writer writer = new OutputStreamWriter(out, "UTF-8");
                 writer.write(postBody);
                 writer.close();
             } catch (IOException e) {
-                throw new Exception("IOException while posting data", e);
+                throw new AutomationFrameworkException("IOException while posting data " + e.getMessage(), e);
             } finally {
                 if (out != null) {
                     out.close();
@@ -229,7 +230,7 @@ public class HttpRequestUtil {
             StringBuilder sb = new StringBuilder();
             BufferedReader rd = null;
             try {
-                rd = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+                rd = new BufferedReader(new InputStreamReader(urlConnection.getInputStream(), Charset.defaultCharset()));
                 String line;
                 while ((line = rd.readLine()) != null) {
                     sb.append(line);
@@ -250,7 +251,8 @@ public class HttpRequestUtil {
             }
             return new HttpResponse(sb.toString(), urlConnection.getResponseCode(), responseHeaders);
         } catch (IOException e) {
-            throw new Exception("Connection error (is server running at " + endpoint + " ?): " + e);
+            throw new AutomationFrameworkException("Connection error (is server running at "
+                                                   + endpoint + " ?): " + e.getMessage() , e);
         } finally {
             if (urlConnection != null) {
                 urlConnection.disconnect();
@@ -260,28 +262,22 @@ public class HttpRequestUtil {
 
     public static HttpResponse doGet(String endpoint, Map<String, String> headers) throws IOException {
         HttpResponse httpResponse;
-        if (endpoint.startsWith("http://")) {
             URL url = new URL(endpoint);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setDoOutput(true);
             conn.setReadTimeout(30000);
             //setting headers
-            if (headers != null && headers.size() > 0) {
-                Iterator<String> itr = headers.keySet().iterator();
-                while (itr.hasNext()) {
-                    String key = itr.next();
-                    if (key != null) {
-                        conn.setRequestProperty(key, headers.get(key));
-                    }
-                }
+            for (Map.Entry<String,String> e : headers.entrySet()) {
+                conn.setRequestProperty(e.getKey(), e.getValue());
             }
+
             conn.connect();
-            // Get the response
+
             StringBuilder sb = new StringBuilder();
             BufferedReader rd = null;
             try {
-                rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), Charset.defaultCharset()));
                 String line;
                 while ((line = rd.readLine()) != null) {
                     sb.append(line);
@@ -289,7 +285,7 @@ public class HttpRequestUtil {
                 httpResponse = new HttpResponse(sb.toString(), conn.getResponseCode());
                 httpResponse.setResponseMessage(conn.getResponseMessage());
             } catch (IOException ignored) {
-                rd = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
+                rd = new BufferedReader(new InputStreamReader(conn.getErrorStream(), Charset.defaultCharset()));
                 String line;
                 while ((line = rd.readLine()) != null) {
                     sb.append(line);
@@ -302,8 +298,6 @@ public class HttpRequestUtil {
                 }
             }
             return httpResponse;
-        }
-        return null;
     }
 
     /**
@@ -317,17 +311,18 @@ public class HttpRequestUtil {
      * @param endpoint    The endpoint to which the data has to be POSTed
      * @param output      Output
      * @param contentType content type of the message
-     * @throws Exception If an error occurs while POSTing
+     * @throws AutomationFrameworkException If an error occurs while POSTing
      */
     public static void sendPostRequest(Reader data, URL endpoint, Writer output, String contentType)
-            throws Exception {
+            throws AutomationFrameworkException {
         HttpURLConnection urlConnection = null;
         try {
             urlConnection = (HttpURLConnection) endpoint.openConnection();
             try {
                 urlConnection.setRequestMethod("POST");
             } catch (ProtocolException e) {
-                throw new Exception("Shouldn't happen: HttpURLConnection doesn't support POST??", e);
+                throw new AutomationFrameworkException("Shouldn't happen: HttpURLConnection doesn't support POST?? "
+                                                       + e.getMessage(), e);
             }
             urlConnection.setDoOutput(true);
             urlConnection.setDoInput(true);
@@ -340,7 +335,7 @@ public class HttpRequestUtil {
                 pipe(data, writer);
                 writer.close();
             } catch (IOException e) {
-                throw new Exception("IOException while posting data", e);
+                throw new AutomationFrameworkException("IOException while posting data " + e.getMessage(), e);
             } finally {
                 if (out != null) {
                     out.close();
@@ -348,18 +343,19 @@ public class HttpRequestUtil {
             }
             InputStream in = urlConnection.getInputStream();
             try {
-                Reader reader = new InputStreamReader(in);
+                Reader reader = new InputStreamReader(in, Charset.defaultCharset());
                 pipe(reader, output);
                 reader.close();
             } catch (IOException e) {
-                throw new Exception("IOException while reading response", e);
+                throw new AutomationFrameworkException("IOException while reading response " + e.getMessage(), e);
             } finally {
                 if (in != null) {
                     in.close();
                 }
             }
         } catch (IOException e) {
-            throw new Exception("Connection error (is server running at " + endpoint + " ?): " + e);
+            throw new AutomationFrameworkException("Connection error (is server running at "
+                                                   + endpoint + " ?): " + e.getMessage(), e);
         } finally {
             if (urlConnection != null) {
                 urlConnection.disconnect();
@@ -378,17 +374,18 @@ public class HttpRequestUtil {
      * @param endpoint    The endpoint to which the data has to be POSTed
      * @param output      Output
      * @param contentType content type of the message
-     * @throws Exception If an error occurs while POSTing
+     * @throws AutomationFrameworkException If an error occurs while POSTing
      */
     public static void sendPutRequest(Reader data, URL endpoint, Writer output, String contentType)
-            throws Exception {
+            throws AutomationFrameworkException {
         HttpURLConnection urlConnection = null;
         try {
             urlConnection = (HttpURLConnection) endpoint.openConnection();
             try {
                 urlConnection.setRequestMethod("PUT");
             } catch (ProtocolException e) {
-                throw new Exception("Shouldn't happen: HttpURLConnection doesn't support PUT??", e);
+                throw new AutomationFrameworkException("Shouldn't happen: HttpURLConnection doesn't " +
+                                                       "support PUT?? " + e.getMessage(), e);
             }
             urlConnection.setDoOutput(true);
             urlConnection.setDoInput(true);
@@ -401,7 +398,7 @@ public class HttpRequestUtil {
                 pipe(data, writer);
                 writer.close();
             } catch (IOException e) {
-                throw new Exception("IOException while posting data", e);
+                throw new AutomationFrameworkException("IOException while posting data " + e.getMessage(), e);
             } finally {
                 if (out != null) {
                     out.close();
@@ -409,23 +406,58 @@ public class HttpRequestUtil {
             }
             InputStream in = urlConnection.getInputStream();
             try {
-                Reader reader = new InputStreamReader(in);
+                Reader reader = new InputStreamReader(in, Charset.defaultCharset());
                 pipe(reader, output);
                 reader.close();
             } catch (IOException e) {
-                throw new Exception("IOException while reading response", e);
+                throw new AutomationFrameworkException("IOException while reading response " + e.getMessage(), e);
             } finally {
                 if (in != null) {
                     in.close();
                 }
             }
         } catch (IOException e) {
-            throw new Exception("Connection error (is server running at " + endpoint + " ?): " + e);
+            throw new AutomationFrameworkException("Connection error (is server running at "
+                                                   + endpoint + " ?): " + e.getMessage(), e);
         } finally {
             if (urlConnection != null) {
                 urlConnection.disconnect();
             }
         }
+    }
+
+    /**
+     * Sends an HTTP DELETE request to a url
+     *
+     * @param endpoint    - The URL of the server. (Example: " http://www.yahoo.com/search")
+     * @param contentType - content type of the message
+     * @return            - The response code from the endpoint
+     * @throws java.io.IOException If an error occurs while sending the DELETE request
+     */
+    public static int sendDeleteRequest(URL endpoint, String contentType) throws AutomationFrameworkException {
+
+        HttpURLConnection urlConnection = null;
+        int responseCode;
+        try {
+            urlConnection = (HttpURLConnection)endpoint.openConnection();
+            try {
+                urlConnection.setRequestMethod("DELETE");
+            } catch (ProtocolException var33) {
+                throw new AutomationFrameworkException(
+                        "Shouldn\'t happen: HttpURLConnection doesn\'t support DELETE?? " + var33.getMessage(), var33);
+            }
+            urlConnection.setDoOutput(true);
+            urlConnection.setRequestProperty("Content-type", contentType);
+            responseCode = urlConnection.getResponseCode();
+        } catch (IOException var36) {
+            throw new AutomationFrameworkException(
+                    "Connection error (is server running at " + endpoint + " ?): " + var36.getMessage(), var36);
+        } finally {
+            if(urlConnection != null) {
+                urlConnection.disconnect();
+            }
+        }
+        return responseCode;
     }
 
     /**

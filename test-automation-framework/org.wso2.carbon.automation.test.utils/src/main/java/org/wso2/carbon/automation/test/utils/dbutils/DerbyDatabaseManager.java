@@ -38,7 +38,14 @@ public class DerbyDatabaseManager implements DatabaseManager {
      * method will start derby server and create a database connection
      *
      * @param jdbcURL JDBC url sample provided in class comment
-     * @throws Exception sql exceptions
+<<<<<<< HEAD
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     * @throws IllegalAccessException
+     * @throws InstantiationException
+=======
+     * @throws ClassNotFoundException sql exceptions
+>>>>>>> 08da37241ca4f608e5d10858d2e478611bb9f017
      */
     public DerbyDatabaseManager(String jdbcURL) throws ClassNotFoundException,
             SQLException, IllegalAccessException,
@@ -75,7 +82,7 @@ public class DerbyDatabaseManager implements DatabaseManager {
      * update existing database information
      *
      * @param sql update sql string
-     * @throws Exception sql exception
+     * @throws SQLException sql exception
      */
     public void executeUpdate(String sql) throws SQLException {
         stmt = dbConnection.createStatement();
@@ -85,9 +92,9 @@ public class DerbyDatabaseManager implements DatabaseManager {
 
     /**
      * update database information bu giving sql file
-     *
-     * @param sqlFile sql file
-     * @throws Exception sql exception
+     * @param sqlFile
+     * @throws SQLException
+     * @throws IOException
      */
     public void executeUpdate(File sqlFile) throws SQLException, IOException {
         Statement st = null;
@@ -113,7 +120,7 @@ public class DerbyDatabaseManager implements DatabaseManager {
      *
      * @param sqlQuery query statement
      * @return output result-set
-     * @throws Exception exception
+     * @throws SQLException exception
      */
     public ResultSet executeQuery(String sqlQuery) throws SQLException {
         stmt = dbConnection.createStatement();
@@ -126,7 +133,7 @@ public class DerbyDatabaseManager implements DatabaseManager {
      * execute sql statement
      *
      * @param sql sql statement
-     * @throws Exception exception
+     * @throws SQLException exception
      */
     public void execute(String sql) throws SQLException {
         stmt = dbConnection.createStatement();

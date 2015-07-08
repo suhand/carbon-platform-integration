@@ -48,4 +48,8 @@ public class FrameworkConstants {
     public static final String SYSTEM_ARTIFACT_RESOURCE_LOCATION = "framework.resource.location";
     public static final String SUPER_TENANT_KEY = "superTenant";
     public static final String SUPER_TENANT_ADMIN = "superAdmin";
+    public static final String CARBON_HOME = "carbon.home";
+    public static final String JACOCO_AGENT_JAR_NAME = "jacocoagent.jar";
+    public static final String CLASS_FILE_PATTERN = "**/*.class";
+
 }

@@ -23,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
 
 import java.io.*;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.util.Enumeration;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -36,8 +37,9 @@ public class FileManager {
         StringBuilder stringBuilder;
         String line;
         String ls;
-        log.debug("Path to file : " + filePath);
-        reader = new BufferedReader(new FileReader(filePath));
+        //log.debug("Path to file : " + filePath);
+        reader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath), Charset.defaultCharset()));
+        //reader = new BufferedReader(new FileReader(filePath));
         stringBuilder = new StringBuilder();
         ls = System.getProperty("line.separator");
         while ((line = reader.readLine()) != null) {
@@ -53,7 +55,8 @@ public class FileManager {
         StringBuilder stringBuilder;
         String line;
         String ls;
-        reader = new BufferedReader(new FileReader(file));
+        reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), Charset.defaultCharset()));
+        //reader = new BufferedReader(new FileReader(file));
         stringBuilder = new StringBuilder();
         ls = System.getProperty("line.separator");
         while ((line = reader.readLine()) != null) {
@@ -65,7 +68,10 @@ public class FileManager {
     }
 
     public static void writeToFile(String filePath, String content) throws IOException {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, true));
+
+        BufferedWriter writer = new BufferedWriter
+                (new OutputStreamWriter(new FileOutputStream(filePath, true), Charset.defaultCharset()));
+
         try {
             writer.write(content);
             writer.newLine();
@@ -81,8 +87,11 @@ public class FileManager {
 
     public static void copyFile(File sourceFile, String destinationPath) throws IOException {
         File destinationFile = new File(destinationPath);
-        FileReader in = new FileReader(sourceFile);
-        FileWriter out = new FileWriter(destinationFile);
+
+        InputStreamReader in = new InputStreamReader(new FileInputStream(sourceFile), Charset.defaultCharset());
+
+        BufferedWriter out = new BufferedWriter
+                (new OutputStreamWriter(new FileOutputStream(destinationFile), Charset.defaultCharset()));
         int c;
         try {
             while ((c = in.read()) != -1) {
@@ -112,16 +121,29 @@ public class FileManager {
         FileUtils.touch(file);
         OutputStream os = FileUtils.openOutputStream(file);
         InputStream is = new FileInputStream(sourcePath);
-        if (is != null) {
-            byte[] data = new byte[1024];
-            int len;
-            while ((len = is.read(data)) != -1) {
-                os.write(data, 0, len);
+
+        try {
+                byte[] data = new byte[1024];
+                int len;
+                while ((len = is.read(data)) != -1) {
+                    os.write(data, 0, len);
+                    os.flush();
+                }
+
+        } finally {
+            try {
+                os.close();
+            } catch (IOException e) {
+                //ignore
             }
-            os.flush();
-            os.close();
-            is.close();
+
+            try {
+                is.close();
+            } catch (IOException e) {
+                //ignore
+            }
         }
+
         return file;
     }
 
@@ -162,6 +184,8 @@ public class FileManager {
             if (jarOutputStream != null) {
                 jarOutputStream.close();
             }
+
+            jarFile.close();
         }
     }
 
@@ -198,6 +222,8 @@ public class FileManager {
                 } catch (IOException e) {
                 }
             }
+
+            jarFile.close();
         }
     }
 
@@ -205,5 +231,8 @@ public class FileManager {
         File jarFile = new File(filePathWithFileName);
         return !jarFile.isDirectory() && jarFile.delete();
     }
+
+
+
 }
 

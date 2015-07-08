@@ -58,7 +58,7 @@ public class InputStreamHandler implements Runnable {
         InputStreamReader inputStreamReader = null;
         try {
 
-            inputStreamReader = new InputStreamReader(inputStream);
+            inputStreamReader = new InputStreamReader(inputStream, "ISO-8859-1");
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
 
             while (true) {
@@ -85,7 +85,7 @@ public class InputStreamHandler implements Runnable {
                 try {
                     inputStream.close();
                 } catch (IOException e) {
-                    log.error("Error occured while closing the stream: " + e.getMessage(), e);
+                    log.error("Error occurred while closing the stream: " + e.getMessage(), e);
                 }
             }
 

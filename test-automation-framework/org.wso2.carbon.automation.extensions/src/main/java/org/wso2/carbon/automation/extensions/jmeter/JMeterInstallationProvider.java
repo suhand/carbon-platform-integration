@@ -46,11 +46,13 @@ public class JMeterInstallationProvider {
 
         File saveServiceProps;
         File upgradeProps;
+        boolean isDeleted = false;
 
         //creating jmeter directory
         jMeterHome = new File(targetDir, "jmeter");
         if (!jMeterHome.mkdirs()) {
             log.error("Unable to create jmeter directory");
+            throw new RuntimeException("Unable to create jmeter directory");
         }
 
         reportDir = new File(jMeterHome, "reports");
@@ -63,6 +65,7 @@ public class JMeterInstallationProvider {
         if (!binDir.exists()) {
             if (!binDir.mkdirs()) {
                 log.error("unable to create bin directory");
+                throw new RuntimeException("unable to create bin dir for Jmeter");
             }
         }
 
@@ -72,15 +75,17 @@ public class JMeterInstallationProvider {
         jmeterPropertyFile = new File(binDir, "jmeter.properties");
         jmeterPropertyFileTemp = new File(binDir, "jmeterTemp.properties");
 
+
         //copying saveservice.properties from classpath
         try {
             Utils.copyFromClassPath("bin/saveservice.properties", saveServiceProps);
         } catch (IOException e) {
             log.error("Could not create temporary saveservice.properties", e);
+            throw new RuntimeException("Could not create temporary saveservice.properties " + e.getMessage(), e);
         }
 
         System.setProperty("saveservice_properties",
-                           File.separator + "bin" + File.separator + "saveservice.properties");
+                File.separator + "bin" + File.separator + "saveservice.properties");
 
         //copying upgrade.properties from classpath
         try {
@@ -88,40 +93,68 @@ public class JMeterInstallationProvider {
 
         } catch (IOException e) {
             log.error("Could not create temporary upgrade.properties", e);
+            throw new RuntimeException("Could not create temporary upgrade.properties " + e.getMessage(), e);
         }
 
         System.setProperty("upgrade_properties",
-                           File.separator + "bin" + File.separator + "upgrade.properties");
+                File.separator + "bin" + File.separator + "upgrade.properties");
+
+        FileOutputStream out = null;
+        FileInputStream in = null;
 
         try {
-            // if the properties file is not specified in the papameters
+
+            out = new FileOutputStream(jmeterPropertyFile);
+            // if the properties file is not specified in the parameters
             log.info("Loading default jmeter.properties...");
             Utils.copyFromClassPath("bin/jmeter.properties", jmeterPropertyFileTemp);
 
-            if(jmeterPropertyFileTemp.exists()){
-                FileOutputStream out = new FileOutputStream(jmeterPropertyFile);
-                FileInputStream in = new FileInputStream(jmeterPropertyFileTemp);
+            if (jmeterPropertyFileTemp.exists()) {
+                in = new FileInputStream(jmeterPropertyFileTemp);
                 Properties props = new Properties();
-
+                //loading properties from temp file
                 props.load(in);
-                in.close();
+
                 //set jemeter properties to stop demon thread creation
                 props.setProperty("jmeter.exit.check.pause", "0");
                 props.setProperty("jmeterengine.stopfail.system.exit", "true");
+
+                //storing properties from temp file to jmeter.properties
                 props.store(out, null);
-                out.close();
-                jmeterPropertyFileTemp.delete();
+
+            }
+
+
+            System.setProperty("jmeter_properties",
+                    File.separator + "bin" + File.separator + "jmeter.properties");
+
+            logDir = new File(jMeterHome, "logs");
+            if (!logDir.mkdirs()) {
+                log.error("Unable to create log directory");
+                throw new RuntimeException("Unable to create log directory");
+
             }
 
         } catch (IOException e) {
-            log.error("Could not create jmeter.properties", e);
-        }
-        System.setProperty("jmeter_properties",
-                           File.separator + "bin" + File.separator + "jmeter.properties");
+            log.error("Could not create jmeter.properties " + e.getMessage(), e);
+            throw new RuntimeException(e.getMessage(), e);
+        } finally {
 
-        logDir = new File(jMeterHome, "logs");
-        if (!logDir.mkdirs()) {
-            log.error("Unable to create log directory");
+                if (out != null) {
+                    try {
+                        out.close();
+                    } catch (IOException e) {
+                        //ignore here
+                    }
+                }
+                if (in != null) {
+                    try {
+                        in.close();
+                    } catch (IOException e) {
+                        //ignore here
+                    }
+                }
+
         }
     }
 

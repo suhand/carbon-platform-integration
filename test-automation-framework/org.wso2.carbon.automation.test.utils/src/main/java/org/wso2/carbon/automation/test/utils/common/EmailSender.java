@@ -1,3 +1,20 @@
+/*
+*Copyright (c) 2015, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+*
+*WSO2 Inc. licenses this file to you under the Apache License,
+*Version 2.0 (the "License"); you may not use this file except
+*in compliance with the License.
+*You may obtain a copy of the License at
+*
+*http://www.apache.org/licenses/LICENSE-2.0
+*
+*Unless required by applicable law or agreed to in writing,
+*software distributed under the License is distributed on an
+*"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+*KIND, either express or implied.  See the License for the
+*specific language governing permissions and limitations
+*under the License.
+*/
 package org.wso2.carbon.automation.test.utils.common;
 
 import javax.activation.DataHandler;
@@ -34,13 +51,14 @@ public class EmailSender {
         this.recipientMail = recipientMail;
     }
 
-    public boolean createSession () {
+    public boolean createSession() {
 
         Authenticator authenticator = new EmailPasswordAuthenticator(username, password);
         session = Session.getInstance(properties, authenticator);
 
-        if (session == null)
+        if (session == null) {
             return false;
+        }
 
         return true;
     }
@@ -59,21 +77,23 @@ public class EmailSender {
     }
 
 
-    public void sendEmail () throws Exception {
+    public void sendEmail() throws MessagingException {
 
         Transport transport = session.getTransport("smtp");
+
         transport.connect();
+
         Message message = new MimeMessage(session);
         // Set from
         message.setFrom(new InternetAddress(senderId));
         // Set to
-        InternetAddress[] address = { new InternetAddress(recipientMail) };
+        InternetAddress[] address = {new InternetAddress(recipientMail)};
         message.setRecipients(Message.RecipientType.TO, address);
         // Set subject
         message.setSubject(subject);
         // Set time
         message.setSentDate(new Date());
-        // Set content// In this example multipart of// part1 is email body
+        // Set content
         MimeBodyPart bodyPart = new MimeBodyPart();
         bodyPart.setText(body);
 
@@ -107,14 +127,11 @@ class EmailPasswordAuthenticator extends Authenticator {
 
     protected PasswordAuthentication passwordAuthentication;
 
-    public EmailPasswordAuthenticator(String user, String password)
-    {
+    public EmailPasswordAuthenticator(String user, String password) {
         this.passwordAuthentication = new PasswordAuthentication(user, password);
     }
 
-    protected PasswordAuthentication getPasswordAuthentication()
-    {
+    protected PasswordAuthentication getPasswordAuthentication() {
         return passwordAuthentication;
     }
 }
-

@@ -33,8 +33,8 @@ public class UrlGenerationUtil {
     /**
      * give the backend URL for the provided instance
      *
-     * @param instance
-     * @return
+     * @param instance - this is the automation server instance
+     * @return backend url of the server instance
      */
     public static String getBackendURL(Instance instance) {
         String backendUrl;
@@ -67,10 +67,10 @@ public class UrlGenerationUtil {
     /**
      * Returns the service URL
      *
-     * @param tenant
-     * @param instance
-     * @param isSecured
-     * @return
+     * @param tenant - tenant id
+     * @param instance - instance
+     * @param isSecured - http or https
+     * @return - service url  of instance http/https
      */
     public static String getServiceURL(Tenant tenant, Instance instance, boolean isSecured) throws XPathExpressionException {
         String serviceURL;
@@ -150,7 +150,7 @@ public class UrlGenerationUtil {
      *
      * @param tenant
      * @param instance
-     * @return
+     * @return return web app url
      */
     public static String getWebAppURL(Tenant tenant, Instance instance) throws XPathExpressionException {
         String webAppURL = null;
@@ -169,6 +169,35 @@ public class UrlGenerationUtil {
                 webAppURL = "http://" + hostName + ":" + httpPort;
             } else {
                 webAppURL = "http://" + hostName;
+            }
+        }
+        return webAppURL;
+    }
+
+    /**
+     * getting https url of a web application
+     * @param tenant
+     * @param instance
+     * @return
+     * @throws XPathExpressionException
+     */
+    public static String getWebAppURLHttps(Tenant tenant, Instance instance) throws XPathExpressionException {
+        String webAppURL = null;
+        String httpsPort = instance.getPorts().get(ContextXpathConstants.PRODUCT_GROUP_PORT_HTTPS);
+        String tenantDomain = tenant.getDomain();
+        String hostName = getWorkerHost(instance);
+        if(!tenant.getDomain().equals(AutomationConfiguration.
+                getConfigurationValue(ContextXpathConstants.SUPER_TENANT_DOMAIN))) {
+            if(httpsPort != null) {
+                webAppURL = "https://" + hostName + ":" + httpsPort + "/t/" + tenantDomain;
+            } else {
+                webAppURL = "https://" + hostName + "/t/" + tenantDomain;
+            }
+        } else {
+            if(httpsPort != null) {
+                webAppURL = "https://" + hostName + ":" + httpsPort;
+            } else {
+                webAppURL = "https://" + hostName;
             }
         }
         return webAppURL;

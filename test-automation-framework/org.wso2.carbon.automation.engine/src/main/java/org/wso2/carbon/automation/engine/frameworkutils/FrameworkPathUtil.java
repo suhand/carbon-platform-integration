@@ -19,10 +19,8 @@ package org.wso2.carbon.automation.engine.frameworkutils;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.wso2.carbon.CarbonConstants;
 import org.wso2.carbon.automation.engine.FrameworkConstants;
 import org.wso2.carbon.automation.engine.frameworkutils.enums.OperatingSystems;
-import org.wso2.carbon.utils.ServerConstants;
 
 import java.io.File;
 
@@ -63,8 +61,8 @@ public class FrameworkPathUtil {
 
     public static String getReportLocation() {
         String reportLocation;
-        reportLocation = (System.getProperty(FrameworkConstants
-                .SYSTEM_PROPERTY_BASEDIR_LOCATION, ".")) + File.separator + "target";
+        reportLocation = (System.getProperty(FrameworkConstants.SYSTEM_PROPERTY_BASEDIR_LOCATION, ".")) +
+                         File.separator + "target";
         return reportLocation;
     }
 
@@ -80,25 +78,50 @@ public class FrameworkPathUtil {
 
     public static String getCarbonServerAxisServiceDirectory() {
         return getCarbonHome() + File.separator + "repository" + File.separator
-                + "deployment" + File.separator + "server" + File.separator + "axis2services";
+               + "deployment" + File.separator + "server" + File.separator + "axis2services";
     }
 
     public static String getCarbonServerLibLocation() {
         return getCarbonHome() + File.separator + "repository" + File.separator + "components" +
-                File.separator + "lib";
+               File.separator + "lib";
     }
 
     public static String getCarbonServerConfLocation() {
         return getCarbonHome() + File.separator + "repository" + File.separator + "conf";
     }
 
-    public static String getCarbonHome() {
+    public static String getCoverageDirPath() {
+        return System.getProperty("basedir") + File.separator + "target" + File.separator +
+               "jacoco" + File.separator + "coverage";
+    }
 
-        String carbonHome = System.getProperty(ServerConstants.CARBON_HOME);
-        if (carbonHome == null) {
-               carbonHome = System.getenv(CarbonConstants.CARBON_HOME_ENV);
-               System.setProperty(ServerConstants.CARBON_HOME, carbonHome);
+    public static String getJacocoCoverageHome() {
+        return System.getProperty("basedir") + File.separator + "target" + File.separator +
+               "jacoco";
+    }
+
+    public static String getTargetDirectory() {
+        return System.getProperty("basedir") + File.separator + "target";
+    }
+
+    public static String getCoverageDumpFilePath() {
+        return getJacocoCoverageHome() + File.separator + "jacoco" + System.currentTimeMillis() + ".exec";
+    }
+
+    public static String getCoverageMergeFilePath() {
+        return getJacocoCoverageHome() + File.separator + "jacoco-data-merge" + ".exec";
+    }
+
+    public static String getJarExtractedFilePath() {
+        return System.getProperty("basedir") + File.separator + "target" + File.separator + "jar";
+    }
+
+    public static String getCarbonHome() {
+        if (System.getProperty(FrameworkConstants.CARBON_HOME) != null) {
+            return System.getProperty(FrameworkConstants.CARBON_HOME);
+        } else {
+            log.error("Cannot read carbon.home property ");
+            return null;
         }
-        return carbonHome;
     }
 }

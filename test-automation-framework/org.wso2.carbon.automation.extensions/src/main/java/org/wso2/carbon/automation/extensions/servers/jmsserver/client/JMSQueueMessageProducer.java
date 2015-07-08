@@ -17,6 +17,7 @@
 */
 package org.wso2.carbon.automation.extensions.servers.jmsserver.client;
 
+import org.wso2.carbon.automation.engine.exceptions.AutomationFrameworkException;
 import org.wso2.carbon.automation.extensions.servers.jmsserver.controller.config.JMSBrokerConfiguration;
 
 import javax.jms.*;
@@ -48,7 +49,7 @@ public class JMSQueueMessageProducer {
     }
 
     /**
-     * This will establish  the connection with the given Queue.
+     * This will establish  the connection with the given Queue and messages are not persisted.
      * This must be called before calling pushMessage() to send messages
      *
      * @param queueName name of the Queue
@@ -66,6 +67,30 @@ public class JMSQueueMessageProducer {
         // Create a MessageProducer from the Session to the Topic or Queue
         producer = session.createProducer(destination);
         producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
+    }
+
+    /**
+     * This will establish  the connection with the given Queue.
+     * This must be called before calling pushMessage() to send messages
+     * @param persistMessage to persist message or not
+     * @param queueName name of the Queue
+     * @throws JMSException when failed to connect to Queue
+     */
+    public void connect(String queueName, boolean persistMessage) throws JMSException {
+        // Create a Connection
+        connection = connectionFactory.createConnection();
+        connection.start();
+        // Create a Session
+        session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        // Create a MessageConsumer from the Session to the Queue
+        Destination destination = session.createQueue(queueName);
+        // Create a MessageProducer from the Session to the Topic or Queue
+        producer = session.createProducer(destination);
+        if(persistMessage) {
+            producer.setDeliveryMode(DeliveryMode.PERSISTENT);
+        } else {
+            producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
+        }
     }
 
     /**
@@ -101,26 +126,38 @@ public class JMSQueueMessageProducer {
      * This will send the message to the destination Queue
      *
      * @param messageContent returns the message contents
-     * @throws Exception
+     * @throws AutomationFrameworkException
      */
-    public void pushMessage(String messageContent) throws Exception {
+    public void pushMessage(String messageContent) throws AutomationFrameworkException {
         if (producer == null) {
-            throw new Exception("No Connection with Queue. Please connect");
+            throw new AutomationFrameworkException("No Connection with Queue. Please connect");
         }
         // Create a messages;
-        TextMessage message = session.createTextMessage(messageContent);
-        producer.send(message);
+        TextMessage message = null;
+        try {
+            message = session.createTextMessage(messageContent);
+            producer.send(message);
+        } catch (JMSException e) {
+            throw new AutomationFrameworkException("Message creation failed", e);
+        }
+
     }
 
     /*
     * This Will send byte stream to the destination
     * @param byte content
-    * @throws Exception
+    * @throws AutomationFrameworkException
      */
 
-    public void sendBytesMessage(byte[] payload) throws Exception {
-        BytesMessage bm = session.createBytesMessage();
-        bm.writeBytes(payload);
-        producer.send(bm);
+    public void sendBytesMessage(byte[] payload) throws AutomationFrameworkException {
+        BytesMessage bm = null;
+        try {
+            bm = session.createBytesMessage();
+            bm.writeBytes(payload);
+            producer.send(bm);
+        } catch (JMSException e) {
+            throw new AutomationFrameworkException("Byte message creation failed", e);
+        }
+
     }
 }
