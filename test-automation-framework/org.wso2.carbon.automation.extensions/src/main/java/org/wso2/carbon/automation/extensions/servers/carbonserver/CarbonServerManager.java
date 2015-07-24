@@ -135,9 +135,7 @@ public class CarbonServerManager {
             ClientConnectionUtil.waitForLogin(backendURL, superUser);
             log.info("Server started successfully.");
 
-        } catch (IOException e) {
-            throw new IllegalStateException("Unable to start server", e);
-        } catch (XPathExpressionException e) {
+        } catch (IOException | XPathExpressionException e) {
             throw new IllegalStateException("Unable to start server", e);
         }
         process = tempProcess;
@@ -277,7 +275,8 @@ public class CarbonServerManager {
     private void generateCoverageReport(File classesDir)
             throws IOException, AutomationFrameworkException {
 
-        CodeCoverageUtils.executeMerge(FrameworkPathUtil.getJacocoCoverageHome());
+        CodeCoverageUtils.executeMerge(FrameworkPathUtil.getJacocoCoverageHome(),
+                                       FrameworkPathUtil.getCoverageMergeFilePath());
         ReportGenerator reportGenerator =
                 new ReportGenerator(new File(FrameworkPathUtil.getCoverageMergeFilePath()),
                                     classesDir,
